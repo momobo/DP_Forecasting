@@ -24,7 +24,11 @@ shinyUI(fluidPage(
     ),
     tabPanel("Time series prediction",
              plotOutput("forecastplot")
-
+             
+    ),
+    tabPanel("Geographic Info",
+             plotOutput("geoplot")
+             
     )
   )
 ))

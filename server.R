@@ -4,6 +4,8 @@ library(plyr)
 library(makeR)
 library(xts)
 library(forecast)
+library(sp)
+library(RColorBrewer)
 
 # read header
 h <- read.csv("header.csv")
@@ -17,6 +19,19 @@ tran <- merge(dn, tran)
 # interpret date
 tran$dateTran <- as.Date(as.character(tran$date),format="%Y-%m-%d")
 
+# read geo data
+pop <- read.csv("germanpop.csv", sep=";")
+# get spatial data for Germany on 1 level (länder)
+con <- url("http://gadm.org/data/rda/DEU_adm1.RData")
+print(load(con))
+close(con)
+
+# simulate Bundesland with variable chain
+tran$code <- (tran$chain %% 16) +1
+tran <- merge(tran, pop)
+
+
+
 # prepare date for graph (temporary, should made dynamic and cached)
 filt <- function(df, deptName){
     if(deptName != "[[ ALL-dept ]]"){
@@ -27,6 +42,17 @@ filt <- function(df, deptName){
     filtered <- ddply(dff, "dateTran" ,function(df){sum(df$purchaseamount)})
     names(filtered)[2] <- "DailyVal"   
     return(filtered)
+}
+
+filtland <- function(df, deptName){
+    if(deptName != "[[ ALL-dept ]]"){
+        dff <- df[df$deptName == deptName, ]
+    }else{
+        dff <- df
+    }
+    filtland <- ddply(dff, "land" ,function(df){sum(df$purchaseamount)})
+    names(filtland)[2] <- "landVal"   
+    return(filtland)
 }
 
 depts     <- c("[[ This doesn't work ]]" , sort(unique(tran$dept)))
@@ -80,11 +106,6 @@ shinyServer(function(input, output) {
         # forecast with the model, with the chosen horizont
         xfor <- forecast(fit,input$checkGroup)
      
-#         # plot (axis shenanigan to have date in x)
-#         plot(xfor, axes=F) # traditional plot
-#         axis(2)
-#         l <- length(acqXdate$dateTran)
-#         axis(1,at = pretty(1:l,n = 6), labels = (acqXdate$dateTran[1]-1) + pretty(1:l,n = 6), cex.axis = 0.65)
 
 # I have cannibalized https://gist.github.com/fernandotenorio/3889834
         serie.orig <- xfor$x
@@ -112,5 +133,29 @@ shinyServer(function(input, output) {
         print(p)
 
  })
+
+output$geoplot <- renderPlot({
+    
+    if(is.null(input$deptName)){PLOT <- FALSE}else{PLOT <- TRUE}
+    if(PLOT){
+        acqXland <- filtland(tran, input$deptName)
+      
+        # prepare 
+        myPalette<-brewer.pal(7,"Purples")
+        # this works
+#         col_no <- cut(merge(data.frame(land=gadm$NAME_1), pop)$population, 
+#                       c(500000, 1000000, 2000000, 4000000, 8000000, 16000000, 32000000))
+#         levels(col_no) <- c(">0.5M", "0,5-1M", "1-2M", "2-4M", "4-8M", "8-16M", "<16M")
+
+        col_no <- cut(merge(data.frame(land=gadm$NAME_1), acqXland)$landVal, breaks=7)
+        gadm$col_no <- col_no
+        
+        # plotting it (geo)
+
+        spplot(gadm, zcol="col_no", col=grey(.9), col.regions=myPalette, main="Value pro land")
+
+    } 
+})
+
  
 })
