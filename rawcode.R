@@ -302,7 +302,8 @@ col_no <- cut(merge(data.frame(land=gadm$NAME_1), filtland)$landVal)
 gadm$col_no <- col_no
 
 
-
+?spplot
+?trellis.par.set
 
 
 pop

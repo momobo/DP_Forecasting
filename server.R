@@ -147,24 +147,29 @@ shinyServer(function(input, output) {
  })
 
 output$geoplot <- renderPlot({
+    # suppress scientific notation
+
     
     if(is.null(input$deptName)){PLOT <- FALSE}else{PLOT <- TRUE}
     if(PLOT){
         acqXland <- filtland(tran, input$deptName, format(input$dates[1]), format(input$dates[2]))
       
-        # prepare 
-        myPalette<-brewer.pal(7,"Purples")
-        # this works
+         # this works
 #         col_no <- cut(merge(data.frame(land=gadm$NAME_1), pop)$population, 
 #                       c(500000, 1000000, 2000000, 4000000, 8000000, 16000000, 32000000))
 #         levels(col_no) <- c(">0.5M", "0,5-1M", "1-2M", "2-4M", "4-8M", "8-16M", "<16M")
 
-        col_no <- cut(merge(data.frame(land=gadm$NAME_1), acqXland)$landVal, breaks=7)
+        col_no <- cut(merge(data.frame(land=gadm$NAME_1), acqXland)$landVal, 
+                           c(30,   100,      300,       1000,     3000,     10000,   30000, 100000, 300000))
+        levels(col_no) <- c(">30", "30-100", "100-300", "300-1K", "1K-3K", "3K-10K","10K-30K","30K-100K","100K-300K")
         gadm$col_no <- col_no
         
         # plotting it (geo)
-
+        # prepare 
+        myPalette<-brewer.pal(nlevels(col_no),"Purples")
+        options(scipen=90)
         spplot(gadm, zcol="col_no", col=grey(.9), col.regions=myPalette, main="Value per Land")
+
 
     } 
 })
