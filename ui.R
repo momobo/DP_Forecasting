@@ -2,8 +2,10 @@
 shinyUI(fluidPage(
   
   titlePanel("Predictive Dashboard"),
+  fluidRow(column(width= 8,  textOutput("text1"))),
   fluidRow(
-  column(width=5,
+
+  column(width=2,
          
          radioButtons("checkGroup", 
                             label = "Prediction length", 
@@ -13,7 +15,11 @@ shinyUI(fluidPage(
                       selected = 30)
   
          ),
-  column(width=5, uiOutput("choose_dept_name"))
+  column(width=4, uiOutput("choose_dept_name")
+         ),
+  column(width=4, uiOutput("choose_time")                     
+        )
+  
   ),
   tabsetPanel("Header",
     tabPanel("Scatterplot",

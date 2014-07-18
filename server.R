@@ -19,6 +19,9 @@ tran <- merge(dn, tran)
 # interpret date
 tran$dateTran <- as.Date(as.character(tran$date),format="%Y-%m-%d")
 
+mindate <- min(tran$dateTran)
+maxdate <- max(tran$dateTran)
+
 # read geo data
 pop <- read.csv("germanpop.csv", sep=";")
 # get spatial data for Germany on 1 level (länder)
@@ -33,22 +36,22 @@ tran <- merge(tran, pop)
 
 
 # prepare date for graph (temporary, should made dynamic and cached)
-filt <- function(df, deptName){
+filt <- function(df, deptName, mind, maxd){
     if(deptName != "[[ ALL-dept ]]"){
-        dff <- df[df$deptName == deptName, ]
+        dff <- df[df$deptName == deptName & df$dateTran >= mind & df$dateTran < maxd,]
     }else{
-        dff <- df
+        dff <- df[df$dateTran >= mind & df$dateTran < maxd,]
     }
     filtered <- ddply(dff, "dateTran" ,function(df){sum(df$purchaseamount)})
     names(filtered)[2] <- "DailyVal"   
     return(filtered)
 }
 
-filtland <- function(df, deptName){
+filtland <- function(df, deptName, mind, maxd){
     if(deptName != "[[ ALL-dept ]]"){
-        dff <- df[df$deptName == deptName, ]
+        dff <- df[df$deptName == deptName & df$dateTran >= mind & df$dateTran < maxd,]
     }else{
-        dff <- df
+        dff <- df[df$dateTran >= mind & df$dateTran < maxd,]
     }
     filtland <- ddply(dff, "land" ,function(df){sum(df$purchaseamount)})
     names(filtland)[2] <- "landVal"   
@@ -63,9 +66,19 @@ deptNames <- c("[[ ALL-dept ]]" , as.character(dx[order(-dx[,2]),]$deptName))
 
 shinyServer(function(input, output) {
     
+#     output$text1 <- renderText({ 
+#         paste("You have selected", paste(input$deptName, ";", input$dates[1], ";", input$dates[2]))
+#     })
+
     # Drop-down selection box for which data set
     output$choose_dept_name <- renderUI({
         selectInput("deptName", "Department Names", as.list(deptNames))
+    })
+    
+    # date Range
+    output$choose_time <- renderUI({
+        dateRangeInput("dates", label = "Date range", 
+                       start = mindate, end = maxdate, min = mindate, max = maxdate)
     })
     
     # BASE PLOT
@@ -75,10 +88,9 @@ shinyServer(function(input, output) {
         if(PLOT){
             
             # result not cached, slow:
-            acqXdate <- filt(tran, input$deptName)
+            acqXdate <- filt(tran, input$deptName, format(input$dates[1]), format(input$dates[2]) )
             # condition to plotting
             
-    
             # plotting it (line)
             g <- ggplot(acqXdate, aes(x=dateTran, y=DailyVal))+geom_line() + geom_smooth(method="loess")
     
@@ -89,7 +101,7 @@ shinyServer(function(input, output) {
     
     output$heatmapchart<- renderPlot({
      # result not cached, slow:
-        acqXdate <- filt(tran, input$deptName)
+        acqXdate <- filt(tran, input$deptName, format(input$dates[1]), format(input$dates[2]))
      # calendar heatmap (from makeR)
         calendarHeat(acqXdate$dateTran, acqXdate$DailyVal)
    
@@ -97,7 +109,7 @@ shinyServer(function(input, output) {
  
     output$forecastplot <- renderPlot({
         # result not cached, slow:
-        acqXdate <- filt(tran, input$deptName)
+        acqXdate <- filt(tran, input$deptName, format(input$dates[1]), format(input$dates[2]))
         # calendar heatmap (from makeR)
         myxts <- xts(x=acqXdate$DailyVal, order.by=acqXdate$dateTran)
         # arima model
@@ -138,7 +150,7 @@ output$geoplot <- renderPlot({
     
     if(is.null(input$deptName)){PLOT <- FALSE}else{PLOT <- TRUE}
     if(PLOT){
-        acqXland <- filtland(tran, input$deptName)
+        acqXland <- filtland(tran, input$deptName, format(input$dates[1]), format(input$dates[2]))
       
         # prepare 
         myPalette<-brewer.pal(7,"Purples")
@@ -152,7 +164,7 @@ output$geoplot <- renderPlot({
         
         # plotting it (geo)
 
-        spplot(gadm, zcol="col_no", col=grey(.9), col.regions=myPalette, main="Value pro land")
+        spplot(gadm, zcol="col_no", col=grey(.9), col.regions=myPalette, main="Value per Land")
 
     } 
 })
