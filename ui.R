@@ -26,7 +26,8 @@ shinyUI(fluidPage(
              plotOutput("distPlot")
     ),
     tabPanel("Heatmap"
-             ,plotOutput("heatmapchart")
+             #, h1("Disabled due to library version problem") #
+             , plotOutput("heatmapchart")
     ),
     tabPanel("Time series prediction",
              plotOutput("forecastplot")

@@ -1,12 +1,15 @@
 library(shiny)
 library(ggplot2)
 library(plyr)
-#library(makeR)
 library(xts)
 library(forecast)
 library(sp)
 library(RColorBrewer)
+source(".//calendarHeat.R")
 
+# require(devtools)
+#install_github('makeR', 'jbryer')
+# install.packages("devtools")
 # read header
 h <- read.csv("header.csv")
 
