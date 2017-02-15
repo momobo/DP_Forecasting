@@ -1,7 +1,7 @@
 library(shiny)
 library(ggplot2)
 library(plyr)
-library(makeR)
+#library(makeR)
 library(xts)
 library(forecast)
 library(sp)
@@ -22,16 +22,19 @@ tran$dateTran <- as.Date(as.character(tran$date),format="%Y-%m-%d")
 mindate <- min(tran$dateTran)
 maxdate <- max(tran$dateTran)
 
-# read geo data
-pop <- read.csv("germanpop.csv", sep=";")
+# read geo data, unfortunately still necessary for the region names
+ pop <- read.csv("germanpop.csv", sep=";")
+
 # get spatial data for Germany on 1 level (länder)
-con <- url("http://gadm.org/data/rda/DEU_adm1.RData")
+#con <- url("http://gadm.org/data/rda/DEU_adm1.RData")
+#con <- url("http://biogeo.ucdavis.edu/data/gadm2/R/DEU_adm1.RData")
+con <- url("https://github.com/ahs85/german-zipcodes/blob/master/DEU_adm1.RData?raw=true")
 print(load(con))
 close(con)
 
 # simulate Bundesland with variable chain
-tran$code <- (tran$chain %% 16) +1
-tran <- merge(tran, pop)
+ tran$code <- (tran$chain %% 16) +1
+ tran <- merge(tran, pop)
 
 
 
